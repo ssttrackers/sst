@@ -25,14 +25,14 @@
     }
     th, td {
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 8px; /* thoda kam kiya */
       text-align: center;
     }
     th {
       background-color: #efefef;
     }
     tr.data-row td {
-      padding: 6px; /* Reduced height for data rows */
+      padding: 6px; /* data rows ki height kam ki */
     }
   </style>
 </head>
@@ -52,55 +52,49 @@
         const table = document.getElementById('csvTable');
 
         let headerCols = [];
-        let dataStart = false;
 
         rows.forEach((row, i) => {
           const cols = row.split(',');
           const tr = document.createElement('tr');
 
-          if (!dataStart) {
-            // Check for actual header row (with 'Ticker')
-            if (cols.includes('Ticker')) {
-              headerCols = cols.map(col => col.trim().toUpperCase());
-              dataStart = true; // Data rows start from next line
-            }
-
-            // Add header cells
+          // First 3 rows as header
+          if (i < 3) {
             cols.forEach(col => {
               const th = document.createElement('th');
               th.textContent = col.trim();
               tr.appendChild(th);
             });
 
+            // Store header row (assume 3rd row is actual column header)
+            if (i === 2) {
+              headerCols = cols.map(col => col.trim().toUpperCase());
+            }
+
           } else {
-            // Data rows
-            tr.classList.add('data-row');
+            tr.classList.add('data-row'); // data row class for padding adjustment
 
             cols.forEach((col, j) => {
               const td = document.createElement('td');
-              const content = col.trim();
-              td.textContent = content;
+              td.textContent = col.trim();
 
               const colName = headerCols[j];
 
-              // % DIFF column: bold black only
+              // Dynamic columns
               if (colName === '% DIFF') {
                 td.style.fontWeight = 'bold';
-                td.style.color = 'black';
+                td.style.color = 'black'; // always black
               }
 
-              // P&L % column: color red/green
               if (colName === 'P&L %') {
-                const num = parseFloat(content);
+                const num = parseFloat(col);
                 if (!isNaN(num)) {
                   td.style.fontWeight = 'bold';
                   td.style.color = num > 0 ? 'green' : (num < 0 ? 'red' : 'black');
                 }
               }
 
-              // GTT UPDATE column: colored backgrounds
               if (colName === 'GTT UPDATE') {
-                const val = content.toUpperCase();
+                const val = col.trim().toUpperCase();
                 td.style.fontWeight = 'bold';
 
                 if (val === 'TRIGGERED') {
