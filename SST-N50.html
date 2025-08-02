@@ -1,90 +1,147 @@
-<style>
-  th, td {
-    border: 1px solid #ddd;
-    padding: 8px; /* pehle 10px tha, ab 8px kiya to row height tight ho jayegi */
-    text-align: center;
-    font-size: 14px;
-  }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SST N50 Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
 
-  tr:hover td {
-    background-color: #f9f9f9;
-  }
+    h1 {
+      color: #333;
+    }
 
-  /* Stock rows ki height thodi kam karne ke liye */
-  table tr:nth-child(n+5) td {
-    padding: 6px 8px;  /* sirf data rows me height kam ki */
-  }
-</style>
+    a {
+      text-decoration: none;
+      color: #0066cc;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
 
-<script>
-  const colIndexes = {
-    ticker: headerRow.findIndex(h => h === 'TICKER'),
-    todayChange: headerRow.findIndex(h => h.includes('TODAY CHANGE')),
-    percentDiff: headerRow.findIndex(h => h.includes('% DIFF')),
-    gttUpdate: headerRow.findIndex(h => h.includes('GTT UPDATE')),
-    pnl: headerRow.findIndex(h => h.includes('P&L'))
-  };
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+    }
 
-  rows.forEach((row, i) => {
-    const tr = document.createElement('tr');
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
 
-    row.forEach((col, j) => {
-      const content = col.trim();
-      const cell = document.createElement(i <= headerRowIndex ? 'th' : 'td');
+    th {
+      background-color: #efefef;
+    }
 
-      // Ticker hyperlink
-      if (i > headerRowIndex && j === colIndexes.ticker && content !== '') {
-        const link = document.createElement('a');
-        link.href = `https://www.tradingview.com/chart/?symbol=NSE:${content}`;
-        link.target = "_blank";
-        link.textContent = content;
-        link.style.fontWeight = 'bold';
-        cell.appendChild(link);
-        tr.appendChild(cell);
-        return;
-      }
+    /* Data rows ki height kam karo (ticker row ke baad) */
+    table tr:nth-child(n+5) td {
+      padding: 6px 8px;
+    }
 
-      // TODAY CHANGE aur P&L% ko color karo
-      if (i > headerRowIndex && [colIndexes.todayChange, colIndexes.pnl].includes(j)) {
-        const num = parseFloat(content);
-        if (!isNaN(num)) {
-          cell.style.fontWeight = "bold";
-          cell.style.color = num > 0 ? "green" : (num < 0 ? "red" : "black");
-        }
-      }
+    /* Hover effect */
+    tr:hover td {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
 
-      // % DIFF ko sirf bold black me rakho
-      if (i > headerRowIndex && j === colIndexes.percentDiff) {
-        cell.style.fontWeight = "bold";
-        cell.style.color = "black";
-      }
+<body>
 
-      // GTT UPDATE styling
-      if (i > headerRowIndex && j === colIndexes.gttUpdate) {
-        const val = content.toUpperCase();
-        if (val === "TRIGGERED") {
-          cell.style.backgroundColor = "#28a745";
-          cell.style.color = "white";
-          cell.style.fontWeight = "bold";
-        } else if (val === "YES") {
-          cell.style.backgroundColor = "#ffc107";
-          cell.style.color = "black";
-          cell.style.fontWeight = "bold";
-        } else if (val === "NEW ADD") {
-          cell.style.backgroundColor = "#007bff";
-          cell.style.color = "white";
-          cell.style.fontWeight = "bold";
-        }
-      }
+  <h1>📊 SST N50 REPORT</h1>
+  <a href="index.html">⬅️ Back to Home</a>
+  <table id="csvTable"></table>
 
-      // Default text
-      if (cell.childNodes.length === 0) {
-        cell.textContent = content;
-      }
+  <script>
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJoID6vuDnZN4q_-6Jj4MiG2yvF3u573bwPXbrfK2zW1WnIDfVVobFYOVDQydWH85eEHflBq2SMtlE/pub?gid=981225084&single=true&output=csv';
 
-      tr.appendChild(cell);
-    });
+    fetch(sheetUrl)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').map(row => row.split(','));
+        const table = document.getElementById('csvTable');
 
-    table.appendChild(tr);
-  });
-</script>
+        const headerRow = rows[2]; // 3rd row headers hote hai
+        const headerRowIndex = 2;
+
+        // Column index auto detect
+        const colIndexes = {
+          ticker: headerRow.findIndex(h => h.toUpperCase().includes('TICKER')),
+          todayChange: headerRow.findIndex(h => h.toUpperCase().includes('TODAY CHANGE')),
+          percentDiff: headerRow.findIndex(h => h.toUpperCase().includes('% DIFF')),
+          gttUpdate: headerRow.findIndex(h => h.toUpperCase().includes('GTT UPDATE')),
+          pnl: headerRow.findIndex(h => h.toUpperCase().includes('P&L'))
+        };
+
+        // Render table
+        rows.forEach((row, i) => {
+          const tr = document.createElement('tr');
+
+          row.forEach((col, j) => {
+            const content = col.trim();
+            const cell = document.createElement(i <= headerRowIndex ? 'th' : 'td');
+
+            // Ticker column hyperlink
+            if (i > headerRowIndex && j === colIndexes.ticker && content !== '') {
+              const link = document.createElement('a');
+              link.href = `https://www.tradingview.com/chart/?symbol=NSE:${content}`;
+              link.target = "_blank";
+              link.textContent = content;
+              link.style.fontWeight = 'bold';
+              cell.appendChild(link);
+              tr.appendChild(cell);
+              return;
+            }
+
+            // TODAY CHANGE and P&L % color coding
+            if (i > headerRowIndex && [colIndexes.todayChange, colIndexes.pnl].includes(j)) {
+              const num = parseFloat(content);
+              if (!isNaN(num)) {
+                cell.style.fontWeight = "bold";
+                cell.style.color = num > 0 ? "green" : (num < 0 ? "red" : "black");
+              }
+            }
+
+            // % DIFF bold black
+            if (i > headerRowIndex && j === colIndexes.percentDiff) {
+              cell.style.fontWeight = "bold";
+              cell.style.color = "black";
+            }
+
+            // GTT UPDATE coloring
+            if (i > headerRowIndex && j === colIndexes.gttUpdate) {
+              const val = content.toUpperCase();
+              if (val === "TRIGGERED") {
+                cell.style.backgroundColor = "#28a745";
+                cell.style.color = "white";
+                cell.style.fontWeight = "bold";
+              } else if (val === "YES") {
+                cell.style.backgroundColor = "#ffc107";
+                cell.style.color = "black";
+                cell.style.fontWeight = "bold";
+              } else if (val === "NEW ADD") {
+                cell.style.backgroundColor = "#007bff";
+                cell.style.color = "white";
+                cell.style.fontWeight = "bold";
+              }
+            }
+
+            // Default text
+            if (cell.childNodes.length === 0) {
+              cell.textContent = content;
+            }
+
+            tr.appendChild(cell);
+          });
+
+          table.appendChild(tr);
+        });
+      });
+  </script>
+
+</body>
+</html>
