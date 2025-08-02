@@ -31,6 +31,9 @@
     th {
       background-color: #efefef;
     }
+    tr.data-row td {
+      padding: 6px; /* Reduced height for data rows */
+    }
   </style>
 </head>
 <body>
@@ -48,51 +51,78 @@
         const rows = csv.trim().split('\n');
         const table = document.getElementById('csvTable');
 
+        let headerCols = [];
+        let dataStart = false;
+
         rows.forEach((row, i) => {
           const cols = row.split(',');
           const tr = document.createElement('tr');
 
-          cols.forEach((col, j) => {
-            const cell = document.createElement(i < 3 ? 'th' : 'td');
-            cell.textContent = col.trim();
-
-            if (i >= 3) {
-              const gttUpdateCol = 7;
-              const percentDiffCol = 5;
-              const pnlCol = 11;
-
-              if (j === percentDiffCol || j === pnlCol) {
-                const num = parseFloat(col);
-                if (!isNaN(num)) {
-                  cell.style.fontWeight = "bold";
-                  cell.style.color = num > 0 ? "green" : (num < 0 ? "red" : "black");
-                }
-              }
-
-              if (j === gttUpdateCol) {
-                const val = col.trim().toUpperCase();
-                if (val === "TRIGGERED") {
-                  cell.style.backgroundColor = "#28a745";
-                  cell.style.color = "white";
-                  cell.style.fontWeight = "bold";
-                } else if (val === "YES") {
-                  cell.style.backgroundColor = "#ffc107";
-                  cell.style.color = "black";
-                  cell.style.fontWeight = "bold";
-                } else if (val === "NEW ADD") {
-                  cell.style.backgroundColor = "#007bff";
-                  cell.style.color = "white";
-                  cell.style.fontWeight = "bold";
-                }
-              }
+          if (!dataStart) {
+            // Check for actual header row (with 'Ticker')
+            if (cols.includes('Ticker')) {
+              headerCols = cols.map(col => col.trim().toUpperCase());
+              dataStart = true; // Data rows start from next line
             }
 
-            tr.appendChild(cell);
-          });
+            // Add header cells
+            cols.forEach(col => {
+              const th = document.createElement('th');
+              th.textContent = col.trim();
+              tr.appendChild(th);
+            });
+
+          } else {
+            // Data rows
+            tr.classList.add('data-row');
+
+            cols.forEach((col, j) => {
+              const td = document.createElement('td');
+              const content = col.trim();
+              td.textContent = content;
+
+              const colName = headerCols[j];
+
+              // % DIFF column: bold black only
+              if (colName === '% DIFF') {
+                td.style.fontWeight = 'bold';
+                td.style.color = 'black';
+              }
+
+              // P&L % column: color red/green
+              if (colName === 'P&L %') {
+                const num = parseFloat(content);
+                if (!isNaN(num)) {
+                  td.style.fontWeight = 'bold';
+                  td.style.color = num > 0 ? 'green' : (num < 0 ? 'red' : 'black');
+                }
+              }
+
+              // GTT UPDATE column: colored backgrounds
+              if (colName === 'GTT UPDATE') {
+                const val = content.toUpperCase();
+                td.style.fontWeight = 'bold';
+
+                if (val === 'TRIGGERED') {
+                  td.style.backgroundColor = '#28a745';
+                  td.style.color = 'white';
+                } else if (val === 'YES') {
+                  td.style.backgroundColor = '#ffc107';
+                  td.style.color = 'black';
+                } else if (val === 'NEW ADD') {
+                  td.style.backgroundColor = '#007bff';
+                  td.style.color = 'white';
+                }
+              }
+
+              tr.appendChild(td);
+            });
+          }
 
           table.appendChild(tr);
         });
       });
   </script>
+
 </body>
 </html>
