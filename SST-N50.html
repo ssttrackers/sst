@@ -1,97 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>SST Report</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background-color: #f9f9f9;
-    }
-    h1 {
-      color: #333;
-    }
-    a {
-      text-decoration: none;
-      color: #0066cc;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background-color: #fff;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background-color: #efefef;
-    }
-  </style>
-</head>
-<body>
+<style>
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px; /* pehle 10px tha, ab 8px kiya to row height tight ho jayegi */
+    text-align: center;
+    font-size: 14px;
+  }
 
-  <h1>📊 SST N50 REPORT</h1>
-  <a href="index.html">⬅️ Back to Home</a>
-  <table id="csvTable"></table>
+  tr:hover td {
+    background-color: #f9f9f9;
+  }
 
-  <script>
-    const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQJoID6vuDnZN4q_-6Jj4MiG2yvF3u573bwPXbrfK2zW1WnIDfVVobFYOVDQydWH85eEHflBq2SMtlE/pub?gid=981225084&single=true&output=csv';
+  /* Stock rows ki height thodi kam karne ke liye */
+  table tr:nth-child(n+5) td {
+    padding: 6px 8px;  /* sirf data rows me height kam ki */
+  }
+</style>
 
-    fetch(sheetUrl)
-      .then(res => res.text())
-      .then(csv => {
-        const rows = csv.trim().split('\n');
-        const table = document.getElementById('csvTable');
+<script>
+  const colIndexes = {
+    ticker: headerRow.findIndex(h => h === 'TICKER'),
+    todayChange: headerRow.findIndex(h => h.includes('TODAY CHANGE')),
+    percentDiff: headerRow.findIndex(h => h.includes('% DIFF')),
+    gttUpdate: headerRow.findIndex(h => h.includes('GTT UPDATE')),
+    pnl: headerRow.findIndex(h => h.includes('P&L'))
+  };
 
-        rows.forEach((row, i) => {
-          const cols = row.split(',');
-          const tr = document.createElement('tr');
+  rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
 
-          cols.forEach((col, j) => {
-            const cell = document.createElement(i < 3 ? 'th' : 'td');
-            cell.textContent = col.trim();
+    row.forEach((col, j) => {
+      const content = col.trim();
+      const cell = document.createElement(i <= headerRowIndex ? 'th' : 'td');
 
-            if (i >= 3) { // Only style data rows
-              const gttUpdateCol = 7;    // ✅ GTT UPDATE (8th column)
-              const percentDiffCol = 5;  // % DIFF (6th column)
-              const pnlCol = 11;         // P&L % (12th column)
+      // Ticker hyperlink
+      if (i > headerRowIndex && j === colIndexes.ticker && content !== '') {
+        const link = document.createElement('a');
+        link.href = `https://www.tradingview.com/chart/?symbol=NSE:${content}`;
+        link.target = "_blank";
+        link.textContent = content;
+        link.style.fontWeight = 'bold';
+        cell.appendChild(link);
+        tr.appendChild(cell);
+        return;
+      }
 
-              if (j === percentDiffCol || j === pnlCol) {
-                const num = parseFloat(col);
-                if (!isNaN(num)) {
-                  cell.style.fontWeight = "bold";
-                  cell.style.color = num > 0 ? "green" : (num < 0 ? "red" : "black");
-                }
-              }
+      // TODAY CHANGE aur P&L% ko color karo
+      if (i > headerRowIndex && [colIndexes.todayChange, colIndexes.pnl].includes(j)) {
+        const num = parseFloat(content);
+        if (!isNaN(num)) {
+          cell.style.fontWeight = "bold";
+          cell.style.color = num > 0 ? "green" : (num < 0 ? "red" : "black");
+        }
+      }
 
-              if (j === gttUpdateCol) {
-                const val = col.trim().toUpperCase();
-                if (val === "TRIGGERED") {
-                  cell.style.backgroundColor = "#28a745";
-                  cell.style.color = "white";
-                  cell.style.fontWeight = "bold";
-                } else if (val === "YES") {
-                  cell.style.backgroundColor = "#ffc107";
-                  cell.style.color = "black";
-                  cell.style.fontWeight = "bold";
-                } else if (val === "NEW ADD") {
-                  cell.style.backgroundColor = "#007bff";
-                  cell.style.color = "white";
-                  cell.style.fontWeight = "bold";
-                }
-              }
-            }
+      // % DIFF ko sirf bold black me rakho
+      if (i > headerRowIndex && j === colIndexes.percentDiff) {
+        cell.style.fontWeight = "bold";
+        cell.style.color = "black";
+      }
 
-            tr.appendChild(cell);
-          });
+      // GTT UPDATE styling
+      if (i > headerRowIndex && j === colIndexes.gttUpdate) {
+        const val = content.toUpperCase();
+        if (val === "TRIGGERED") {
+          cell.style.backgroundColor = "#28a745";
+          cell.style.color = "white";
+          cell.style.fontWeight = "bold";
+        } else if (val === "YES") {
+          cell.style.backgroundColor = "#ffc107";
+          cell.style.color = "black";
+          cell.style.fontWeight = "bold";
+        } else if (val === "NEW ADD") {
+          cell.style.backgroundColor = "#007bff";
+          cell.style.color = "white";
+          cell.style.fontWeight = "bold";
+        }
+      }
 
-          table.appendChild(tr);
-        });
-      });
-  </script>
-</body>
-</html>
+      // Default text
+      if (cell.childNodes.length === 0) {
+        cell.textContent = content;
+      }
+
+      tr.appendChild(cell);
+    });
+
+    table.appendChild(tr);
+  });
+</script>
